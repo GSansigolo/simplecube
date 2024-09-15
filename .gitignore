@@ -21,6 +21,7 @@ sdist/
 var/
 wheels/
 share/python-wheels/
+simplecube.egg-info/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -42,6 +43,7 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
+.Identifier
 .cache
 nosetests.xml
 coverage.xml
@@ -50,6 +52,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+notebooks/021037
 
 # Translations
 *.mo
