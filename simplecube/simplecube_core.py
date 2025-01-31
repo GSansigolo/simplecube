@@ -14,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 import rasterio
 import rioxarray
+import calendar
 
 cloud_dict = {
     'S2-16D-2':{
@@ -142,6 +143,32 @@ def simple_cube(data_dir):
         list_da.append(da)
     data_cube = xr.combine_by_coords(list_da)   
     return data_cube
+
+def hls_simple_cube(data_dir):
+    list_da = []
+    for path in os.listdir(data_dir):
+        da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
+        time = path.split(".")[3]
+        date = hlsDate(time)
+        dt = datetime.strptime(date, '%Y%m%d%H%M%S') 
+        dt = pd.to_datetime(dt)
+        da = da.assign_coords(time = dt)
+        da = da.expand_dims(dim="time")
+        list_da.append(da)
+    data_cube = xr.combine_by_coords(list_da, combine_attrs='drop_conflicts')   
+    return data_cube
+
+def hlsDate(time):
+    y_jd = time.split('T')[0]
+    h_m_s = time.split('T')[1]
+    y = int(y_jd[:4])
+    jd = int(y_jd[:-4])
+    month = 1
+    while jd - calendar.monthrange(y,month)[1] > 0 and month <= 12:
+        jd = jd - calendar.monthrange(y,month)[1]
+        month += 1   
+    result = y,month,jd,int(h_m_s)
+    return "".join(str(e) for e in result)
 
 def interpolate_array(array):
     if len(array) == 0:
