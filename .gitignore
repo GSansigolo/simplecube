@@ -27,9 +27,11 @@ simplecube.egg-info/
 *.egg
 MANIFEST
 .DS_Store
-notebooks/T21JXH
+notebooks/T21JYJ
+notebooks/not_used_T22JBP
 notebooks/L30
 notebooks/S30
+
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
