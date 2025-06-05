@@ -15,6 +15,8 @@ from datetime import datetime
 import rasterio
 import rioxarray
 import calendar
+from tqdm import tqdm
+from pystac_client import Client
 
 cloud_dict = {
     'S2-16D-2':{
@@ -24,7 +26,9 @@ cloud_dict = {
     }
 }
 
-def cube_query(collection, start_date, end_date, freq, band=None):
+stac = Client.open("https://data.inpe.br/bdc/stac/v1")
+
+def cube_query(collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     """An object that contains the information associated with a collection 
     that can be downloaded or acessed.
 
@@ -35,15 +39,17 @@ def cube_query(collection, start_date, end_date, freq, band=None):
 
         end_date : String containing the start date of the associated collection. Following YYYY-MM-DD structure.
 
-        freq String containing the frequency of images of the associated collection. Following (days)D structure. 
+        freq : Optional, string containing the frequency of images of the associated collection. Following (days)D structure. 
 
-        band : Optional, string containing the band id.
+        bands : Optional, string containing the list bands id.
     """
 
     return dict(
         collection = collection,
-        band = band,
+        bands = bands,
         start_date = start_date,
+        tile = tile,
+        bbox = bbox,
         end_date = end_date,
         freq=freq
     )
@@ -109,16 +115,7 @@ def download_stream(file_path: str, response, chunk_size=1024*64, progress=True,
 
     if file_size != total_size:
         os.remove(file_path)
-        #print(f'Download file is corrupt. Expected {total_size} bytes, got {file_size}')
-     
-#def download(collection, start_date, end_date, bbox):
-    #stac = Client.open(url_stac)
-    #item_search = stac.search(bbox=bbox, collections=[collection],  datetime=start_date+'/'+end_date)
-    #if not os.path.exists('zip'):
-        #os.makedirs('zip')
-    #for item in item_search.items():
-        #response = requests.get(item.assets["asset"].href, stream=True)
-        #download_stream(os.path.basename(item.assets["asset"].href), response, total_size=item.to_dict()['assets']["asset"]["bdc:size"])
+        raise IOError(f'Download file is corrupt. Expected {total_size} bytes, got {file_size}')
 
 def unzip():
     for z in glob.glob("*.zip"):
@@ -131,32 +128,33 @@ def unzip():
             #print("An exception occurred")
             os.remove(z)
 
-def simple_cube(data_dir):
-    list_da = []
-    for path in os.listdir(data_dir):
-        da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
-        time = path.split("_")[-2]
-        dt = datetime.strptime(time, '%Y%m%d')
-        dt = pd.to_datetime(dt)
-        da = da.assign_coords(time = dt)
-        da = da.expand_dims(dim="time")
-        list_da.append(da)
-    data_cube = xr.combine_by_coords(list_da)   
-    return data_cube
-
-def hls_simple_cube(data_dir):
-    list_da = []
-    for path in os.listdir(data_dir):
-        da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
-        time = path.split(".")[3]
-        dt = datetime.strptime(time, '%Y%jT%H%M%S')
-        dt = pd.to_datetime(dt)
-        da = da.assign_coords(time = dt)
-        da = da.expand_dims(dim="time")
-        list_da.append(da)
-    data_cube = xr.combine_by_coords(list_da, combine_attrs='drop_conflicts')   
-    return data_cube
-
+def simple_cube(data_dir, datacube, source, band):
+        if (source == 'esa'):
+            data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+datacube['tile']+'/'+band+'/')
+        if (source == 'bdc-amz'):
+            data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+'data'+'/'+band+'/')
+        list_da = []
+        for path in os.listdir(data_dir):
+            da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
+            if (source == 'bdc'):
+                time = path.split("_")[-2]
+                dt = datetime.strptime(time, '%Y%m%d') 
+            if (source == 'bdc-amz'):
+                time = path.split("_")[3]
+                dt = datetime.strptime(time, '%Y%m%d') 
+            if (source == 'esa'):
+                time = path.split("_")[2].split('T')[0]
+                dt = datetime.strptime(time, '%Y%m%d')
+            if (source == 'nasa'):
+                time = path.split(".")[3]
+                dt = datetime.strptime(time, '%Y%jT%H%M%S')
+            dt = pd.to_datetime(dt)
+            da = da.assign_coords(time = dt)
+            da = da.expand_dims(dim="time")
+            list_da.append(da)
+        data_cube = xr.combine_by_coords(list_da)   
+        return data_cube
+       
 def interpolate_array(array):
     if len(array) == 0:
         return []
@@ -166,3 +164,45 @@ def interpolate_array(array):
     f = scipy_interpolate.interp1d(inds[good],array[good],bounds_error=False)
     return_array = np.where(np.isfinite(array),array,f(inds))
     return return_array.tolist()
+
+def cube_get_data(datacube):
+
+    collection = datacube['collection']
+    if (datacube['tile']):
+        mgrs_tile = datacube['tile']
+    elif (datacube['bbox']):
+        bbox = datacube['bbox']
+    start_date = datacube['start_date']
+    end_date = datacube['end_date']
+    bands = datacube['bands']
+
+    if (datacube['tile']):
+        item_search = stac.search(
+            collections=[collection],
+            datetime=start_date+"T00:00:00Z/"+end_date+"T23:59:00Z",
+            query={
+                "bdc:tile": {"eq": mgrs_tile},
+            }
+        )
+    elif (datacube['bbox']):
+        mgrs_tile = "data"
+        item_search = stac.search(
+            collections=[collection],
+            datetime=start_date+"T00:00:00Z/"+end_date+"T23:59:00Z",
+            bbox=bbox
+        )
+
+    if not os.path.exists(collection+"/"+mgrs_tile):
+        os.makedirs(collection+"/"+mgrs_tile)
+        
+    for band in bands:
+        if not os.path.exists(collection+"/"+mgrs_tile+"/"+band):
+            os.makedirs(collection+"/"+mgrs_tile+"/"+band)
+
+    for item in item_search.items():
+        for band in bands:
+            response = requests.get(item.assets[band].href, stream=True)
+            if(os.path.exists(os.path.join(collection+"/"+mgrs_tile+"/"+band, os.path.basename(item.assets[band].href)))):
+                print(os.path.basename(item.assets[band].href)[:30]+'...', ': Already exists')
+            else:
+                download_stream(os.path.join(collection+"/"+mgrs_tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])

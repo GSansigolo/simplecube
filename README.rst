@@ -16,9 +16,9 @@
     along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 
 
-=================================================
+=======================================================================================
 Simple python package for creating satellite image data cubes based on Brazil Data Cube
-=================================================
+=======================================================================================
 
 
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
