@@ -16,6 +16,7 @@ import rasterio
 import rioxarray
 import calendar
 from tqdm import tqdm
+from pyproj import Transformer
 from pystac_client import Client
 
 cloud_dict = {
@@ -25,6 +26,8 @@ cloud_dict = {
         'cloud_values': [0,1,2,3,7,8,9,10,11]
     }
 }
+
+transformer = Transformer.from_crs("EPSG:4326","EPSG:32621")
 
 stac = Client.open("https://data.inpe.br/bdc/stac/v1")
 
