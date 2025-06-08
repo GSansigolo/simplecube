@@ -11,13 +11,13 @@ import numpy as np
 import os, glob
 import zipfile
 import pandas as pd
-from datetime import datetime
 import rasterio
 import rioxarray
 import calendar
 from tqdm import tqdm
 from pyproj import Transformer
 from pystac_client import Client
+from rasterio.windows import from_bounds
 
 cloud_dict = {
     'S2-16D-2':{
@@ -132,13 +132,17 @@ def unzip():
             os.remove(z)
 
 def simple_cube(data_dir, datacube, source, band):
-        if (source == 'esa'):
-            data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+datacube['tile']+'/'+band+'/')
-        if (source == 'bdc-amz'):
-            data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+'data'+'/'+band+'/')
-        list_da = []
-        for path in os.listdir(data_dir):
-            da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
+    #bbox = tuple(map(float, datacube['bbox'].split(',')))
+    #crs='+proj=aea +lat_0=-12 +lon_0=-54 +lat_1=-2 +lat_2=-22 +x_0=5000000 +y_0=10000000 +ellps=GRS80 +units=m +no_defs'
+    if (source == 'esa'):
+        data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+datacube['tile']+'/'+band+'/')
+    if (source == 'bdc-amz'):
+        data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+'data'+'/'+band+'/')
+    list_da = []
+    for path in os.listdir(data_dir):
+        da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
+        try:
+            da = da.rio.clip_box(minx=738486.,miny=7418582.,maxx=1057496.,maxy=7673592.)  
             if (source == 'bdc'):
                 time = path.split("_")[-2]
                 dt = datetime.strptime(time, '%Y%m%d') 
@@ -155,8 +159,10 @@ def simple_cube(data_dir, datacube, source, band):
             da = da.assign_coords(time = dt)
             da = da.expand_dims(dim="time")
             list_da.append(da)
-        data_cube = xr.combine_by_coords(list_da)   
-        return data_cube
+        except:
+            pass
+    data_cube = xr.combine_by_coords(list_da)   
+    return data_cube
        
 def interpolate_array(array):
     if len(array) == 0:
