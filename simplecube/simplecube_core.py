@@ -14,10 +14,12 @@ import pandas as pd
 import rasterio
 import rioxarray
 import calendar
+import pyproj
 from tqdm import tqdm
 from pyproj import Transformer
 from pystac_client import Client
-from rasterio.windows import from_bounds
+from shapely.ops import transform
+import shapely
 
 cloud_dict = {
     'S2-16D-2':{
@@ -27,7 +29,27 @@ cloud_dict = {
     }
 }
 
-transformer = Transformer.from_crs("EPSG:4326","EPSG:32621")
+coverage_proj = pyproj.CRS.from_wkt('''
+    PROJCS["unknown",
+        GEOGCS["unknown",
+            DATUM["Unknown based on GRS80 ellipsoid",
+                SPHEROID["GRS 1980",6378137,298.257222101,
+                    AUTHORITY["EPSG","7019"]]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.0174532925199433,
+                AUTHORITY["EPSG","9122"]]],
+        PROJECTION["Albers_Conic_Equal_Area"],
+        PARAMETER["latitude_of_center",-12],
+        PARAMETER["longitude_of_center",-54],
+        PARAMETER["standard_parallel_1",-2],
+        PARAMETER["standard_parallel_2",-22],
+        PARAMETER["false_easting",5000000],
+        PARAMETER["false_northing",10000000],
+        UNIT["metre",1,
+        AUTHORITY["EPSG","9001"]],
+        AXIS["Easting",EAST],
+        AXIS["Northing",NORTH]]''')
 
 stac = Client.open("https://data.inpe.br/bdc/stac/v1")
 
@@ -132,8 +154,10 @@ def unzip():
             os.remove(z)
 
 def simple_cube(data_dir, datacube, source, band):
-    #bbox = tuple(map(float, datacube['bbox'].split(',')))
-    #crs='+proj=aea +lat_0=-12 +lon_0=-54 +lat_1=-2 +lat_2=-22 +x_0=5000000 +y_0=10000000 +ellps=GRS80 +units=m +no_defs'
+    bbox = tuple(map(float, datacube['bbox'].split(',')))
+    proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326),pyproj.CRS.from_epsg(32722), always_xy=True).transform
+    polygon = shapely.geometry.box(*bbox)
+    reproj_bbox = transform(proj_converter, polygon)
     if (source == 'esa'):
         data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+datacube['tile']+'/'+band+'/')
     if (source == 'bdc-amz'):
@@ -142,7 +166,7 @@ def simple_cube(data_dir, datacube, source, band):
     for path in os.listdir(data_dir):
         da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
         try:
-            da = da.rio.clip_box(minx=738486.,miny=7418582.,maxx=1057496.,maxy=7673592.)  
+            da = da.rio.clip_box(*reproj_bbox.bounds)  
             if (source == 'bdc'):
                 time = path.split("_")[-2]
                 dt = datetime.strptime(time, '%Y%m%d') 

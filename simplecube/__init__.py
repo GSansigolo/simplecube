@@ -1,1 +1,1 @@
-from .simplecube_core import  cube_query, simple_cube, cube_get_data
+from .simplecube_core import  cube_query, simple_cube, cube_get_data, get_timeseries_datacube
