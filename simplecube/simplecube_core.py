@@ -155,13 +155,14 @@ def unzip():
 
 def simple_cube(data_dir, datacube, source, band):
     bbox = tuple(map(float, datacube['bbox'].split(',')))
-    proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326),pyproj.CRS.from_epsg(32722), always_xy=True).transform
+    if (source == 'bdc-amz'):
+        data_proj = pyproj.CRS.from_epsg(32722)
+    if (source == 'esa'):
+        data_proj = pyproj.CRS.from_epsg(32722)
+    proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326), data_proj, always_xy=True).transform
     polygon = shapely.geometry.box(*bbox)
     reproj_bbox = transform(proj_converter, polygon)
-    if (source == 'esa'):
-        data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+datacube['tile']+'/'+band+'/')
-    if (source == 'bdc-amz'):
-        data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+'data'+'/'+band+'/')
+    data_dir = os.path.join(data_dir+'/'+datacube['collection']+'/'+'data'+'/'+band+'/')
     list_da = []
     for path in os.listdir(data_dir):
         da = xr.open_dataarray(os.path.join(data_dir+path), engine='rasterio')
@@ -201,13 +202,17 @@ def interpolate_array(array):
 def cube_get_data(datacube):
 
     collection = datacube['collection']
-    if (datacube['tile']):
-        mgrs_tile = datacube['tile']
-    elif (datacube['bbox']):
-        bbox = datacube['bbox']
+    bbox = datacube['bbox']
     start_date = datacube['start_date']
     end_date = datacube['end_date']
     bands = datacube['bands']
+
+    mgrs_tile = "data"
+    item_search = stac.search(
+        collections=[collection],
+        datetime=start_date+"T00:00:00Z/"+end_date+"T23:59:00Z",
+        bbox=bbox
+    )
 
     if (datacube['tile']):
         item_search = stac.search(
@@ -216,13 +221,6 @@ def cube_get_data(datacube):
             query={
                 "bdc:tile": {"eq": mgrs_tile},
             }
-        )
-    elif (datacube['bbox']):
-        mgrs_tile = "data"
-        item_search = stac.search(
-            collections=[collection],
-            datetime=start_date+"T00:00:00Z/"+end_date+"T23:59:00Z",
-            bbox=bbox
         )
 
     if not os.path.exists(collection+"/"+mgrs_tile):
