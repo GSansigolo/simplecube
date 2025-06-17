@@ -22,12 +22,12 @@ Simple python package for creating satellite image data cubes based on Brazil Da
 
 
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
-        :target: https://github.com/brazil-data-cube/wcpms.py/blob/master/LICENSE
+        :target: https://github.com/GSansigolo/simplecube/blob/master/LICENSE
         :alt: Software License
 
 
-.. image:: https://readthedocs.org/projects/wcpms/badge/?version=latest
-        :target: https://wcpms.readthedocs.io/en/latest/
+.. image:: https://readthedocs.org/projects/simplecube/badge/?version=latest
+        :target: https://simplecube.readthedocs.io/en/latest/
         :alt: Documentation Status
 
 
@@ -36,13 +36,13 @@ Simple python package for creating satellite image data cubes based on Brazil Da
         :alt: Software Life Cycle
 
 
-.. image:: https://img.shields.io/github/tag/brazil-data-cube/wcpms.py.svg
-        :target: https://github.com/brazil-data-cube/wcpms.py/releases
+.. image:: https://img.shields.io/github/tag/brazil-data-cube/simplecube.py.svg
+        :target: https://github.com/GSansigolo/simplecube/releases
         :alt: Release
 
 
-.. image:: https://img.shields.io/pypi/v/wcpms
-        :target: https://pypi.org/project/wcpms/
+.. image:: https://img.shields.io/pypi/v/simplecube
+        :target: https://pypi.org/project/simplecube/
         :alt: Python Package Index
 
 
