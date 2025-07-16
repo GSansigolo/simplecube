@@ -64,7 +64,7 @@ See `INSTALL.rst <./INSTALL.rst>`_.
 
 
 Using simplecube in the Command Line
-==============================
+====================================
 
 See `CLI.rst <./CLI.rst>`_.
 
