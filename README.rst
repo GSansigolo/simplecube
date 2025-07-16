@@ -36,7 +36,7 @@ Simple python package for creating satellite image data cubes based on Brazil Da
         :alt: Software Life Cycle
 
 
-.. image:: https://img.shields.io/github/tag/brazil-data-cube/simplecube.py.svg
+.. image:: https://img.shields.io/github/v/tag/GSansigolo/simplecube.svg
         :target: https://github.com/GSansigolo/simplecube/releases
         :alt: Release
 
@@ -63,7 +63,7 @@ Installation
 See `INSTALL.rst <./INSTALL.rst>`_.
 
 
-Using WLTS in the Command Line
+Using simplecube in the Command Line
 ==============================
 
 See `CLI.rst <./CLI.rst>`_.
