@@ -269,7 +269,10 @@ def simple_cube(data_dir, collection, start_date, end_date, tile=None, bbox=None
         bands=bands
     )
     
-    collection_get_data(collection)
+    if collection['collection'] not in ['AMZ1-WFI-L4-SR-1', 'S2-16D-2', 'S2_L2A-1']:
+        return print(f"{collection['collection']} collection not yet supported.")
+
+    collection_get_data(collection, data_dir)
                 
     bbox = tuple(map(float, collection['bbox'].split(',')))
     
@@ -289,6 +292,7 @@ def simple_cube(data_dir, collection, start_date, end_date, tile=None, bbox=None
     list_da = []
     for image in os.listdir(os.path.join(data_dir, collection['collection'], scenes[0], bands[0])):
         da = xr.open_dataarray(os.path.join(data_dir, collection['collection'], scenes[0], bands[0], image), engine='rasterio')
+        da = da.astype('int16')
         try:
             da = da.rio.clip_box(*reproj_bbox.bounds)  
             if (collection['collection'] == "AMZ1-WFI-L4-SR-1"):
@@ -319,7 +323,8 @@ def interpolate_array(array):
     return_array = np.where(np.isfinite(array),array,f(inds))
     return return_array.tolist()
 
-def collection_get_data(datacube):
+def collection_get_data(datacube, data_dir):
+    
     collection = datacube['collection']
     bbox = datacube['bbox']
     start_date = datacube['start_date']
@@ -344,12 +349,13 @@ def collection_get_data(datacube):
             if tile not in tiles:
                 tiles.append(tile)
                 
-    for tile in tiles:      
-        if not os.path.exists(collection+"/"+tile):
-            os.makedirs(collection+"/"+tile)
+    for tile in tiles:
+        #print(data_dir+"/"+collection+"/"+tile)      
+        if not os.path.exists(data_dir+"/"+collection+"/"+tile):
+            os.makedirs(data_dir+"/"+collection+"/"+tile)
         for band in bands:
-            if not os.path.exists(collection+"/"+tile+"/"+band):
-                os.makedirs(collection+"/"+tile+"/"+band)
+            if not os.path.exists(data_dir+"/"+collection+"/"+tile+"/"+band):
+                os.makedirs(data_dir+"/"+collection+"/"+tile+"/"+band)
 
     geom_map = []
     download = False
@@ -358,18 +364,21 @@ def collection_get_data(datacube):
         for band in bands:
             if (collection=="AMZ1-WFI-L4-SR-1"):
                 tile = item.id.split("_")[4]+'_'+item.id.split("_")[5]
+            if (collection=="S2_L2A-1"):
+                tile = item.id.split("_")[5][1:]
+
             response = requests.get(item.assets[band].href, stream=True)
             if not any(tile_dict["tile"] == tile for tile_dict in geom_map):
                 geom_map.append(dict(tile=tile, geometry=item.geometry))
-            if(os.path.exists(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)))):
+            if(os.path.exists(os.path.join(data_dir+"/"+collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)))):
                 download = False
             else:
                 download = True
-                download_stream(os.path.join(collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])
+                download_stream(os.path.join(data_dir+"/"+collection+"/"+tile+"/"+band, os.path.basename(item.assets[band].href)), response, total_size=item.to_dict()['assets'][band]["bdc:size"])
     
     if(download):
         file_name = collection+".json"
-        with open(os.path.join(collection+"/"+file_name), 'w') as json_file:
+        with open(os.path.join(data_dir+"/"+collection+"/"+file_name), 'w') as json_file:
             json.dump(dict(collection=collection, geoms=geom_map), json_file, indent=4)
 
     print(f"Successfully download {item_search.matched()} files to {os.path.join(collection)}")
