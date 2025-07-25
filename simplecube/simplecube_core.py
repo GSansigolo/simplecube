@@ -25,6 +25,12 @@ import shapely
 from shapely.geometry import box
 from shapely.geometry import shape
 
+import warnings
+warnings.filterwarnings("ignore", 
+                       message="invalid value encountered in cast",
+                       category=RuntimeWarning,
+                       module="xarray.core.duck_array_ops")
+
 cloud_dict = {
     'S2-16D-2':{
         'cloud_band': 'SCL',
@@ -35,6 +41,16 @@ cloud_dict = {
         'cloud_band': 'SCL',
         'non_cloud_values': [4,5,6],
         'cloud_values': [0,1,2,3,7,8,9,10,11]
+    },
+    'LANDSAT-16D-1':{
+        'cloud_band': 'qa_pixel',
+        'non_cloud_values': [6,7],
+        'cloud_values': [0,1,2,3,4,5]
+    },
+    'landsat-2':{
+        'cloud_band': 'qa_pixel',
+        'non_cloud_values': [6,7],
+        'cloud_values': [0,1,2,3,4,5]
     },
     'AMZ1-WFI-L4-SR-1':{
         'cloud_band': 'CMASK',
@@ -269,7 +285,7 @@ def simple_cube(data_dir, collection, start_date, end_date, tile=None, bbox=None
         bands=bands
     )
     
-    if collection['collection'] not in ['AMZ1-WFI-L4-SR-1', 'S2-16D-2', 'S2_L2A-1']:
+    if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1']:
         return print(f"{collection['collection']} collection not yet supported.")
 
     collection_get_data(collection, data_dir)
@@ -301,6 +317,12 @@ def simple_cube(data_dir, collection, start_date, end_date, tile=None, bbox=None
             if (collection['collection'] == "S2_L2A-1"):
                 time = image.split("_")[2].split('T')[0]
                 dt = datetime.strptime(time, '%Y%m%d')
+            if (collection['collection'] == "S2-16D-2"):
+                time = image.split("_")[3]
+                dt = datetime.strptime(time, '%Y%m%d')
+            if (collection['collection'] == "LANDSAT-16D-1" or "landsat-2"):
+                time = image.split("_")[3]
+                dt = datetime.strptime(time, '%Y%m%d')
             else:
                 time = image.split("_")[-2]
                 dt = datetime.strptime(time, '%Y%m%d') 
@@ -329,7 +351,7 @@ def collection_get_data(datacube, data_dir):
     bbox = datacube['bbox']
     start_date = datacube['start_date']
     end_date = datacube['end_date']
-    bands = datacube['bands'] + [cloud_dict[collection]['cloud_band']]
+    bands = datacube['bands'] #+ [cloud_dict[collection]['cloud_band']]
 
     if (datacube['bbox']):
         item_search = stac.search(
@@ -346,6 +368,10 @@ def collection_get_data(datacube, data_dir):
                 tiles.append(tile)
         if (collection=="S2_L2A-1"):
             tile = item.id.split("_")[5][1:]
+            if tile not in tiles:
+                tiles.append(tile)
+        if (collection=="LANDSAT-16D-1" or "landsat-2" or "S2-16D-2"):
+            tile = item.id.split("_")[2]
             if tile not in tiles:
                 tiles.append(tile)
                 
@@ -366,6 +392,8 @@ def collection_get_data(datacube, data_dir):
                 tile = item.id.split("_")[4]+'_'+item.id.split("_")[5]
             if (collection=="S2_L2A-1"):
                 tile = item.id.split("_")[5][1:]
+            if (collection=="LANDSAT-16D-1" or "landsat-2" or "S2-16D-2"):
+                tile = item.id.split("_")[2]
 
             response = requests.get(item.assets[band].href, stream=True)
             if not any(tile_dict["tile"] == tile for tile_dict in geom_map):
