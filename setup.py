@@ -32,7 +32,8 @@ setup(
         "rasterio==1.3.11",
         "rioxarray==0.17.0",
         "fsspec==2025.9.0",
-        "aiohttp==3.12.15"
+        "aiohttp==3.12.15",
+        "h5netcdf==1.6.4"
     ],
     long_description = LONG_DESCRIPTION,
     setup_requires=['pytest-runner'],
