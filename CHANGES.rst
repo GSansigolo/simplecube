@@ -19,6 +19,15 @@
 Changes
 =======
 
+
+0.6.0 (2025-XX-YY)
+------------------
+
+* **NetCDF Support**: The ``simplecube`` function can now create data cubes directly from NetCDF files.
+* **SAMeT Daily**: Added full support for SAMeT Daily data. 🛰️
+* **Function Update**: Updated the ``get_timeseries_datacube`` function to align with new NetCDF and remote file capabilities.
+* **New Notebook**: Added the ``simplecube_samet`` notebook to demonstrate the new functionalities. 
+
 0.5.0 (2025-09-25)
 ------------------
 

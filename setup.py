@@ -30,7 +30,9 @@ setup(
         "scipy==1.13.1",
         "datetime==5.5",
         "rasterio==1.3.11",
-        "rioxarray==0.17.0"
+        "rioxarray==0.17.0",
+        "fsspec==2025.9.0",
+        "aiohttp==3.12.15"
     ],
     long_description = LONG_DESCRIPTION,
     setup_requires=['pytest-runner'],

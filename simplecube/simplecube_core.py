@@ -12,6 +12,7 @@ import os, glob
 import zipfile
 import pandas as pd
 import rasterio
+import fsspec
 import json
 import rioxarray
 import calendar
@@ -23,6 +24,8 @@ from shapely.ops import transform
 import shapely
 from shapely.geometry import box
 from shapely.geometry import shape
+
+fs = fsspec.filesystem('https')
 
 import warnings
 warnings.filterwarnings("ignore", 
@@ -193,13 +196,13 @@ def smooth_timeseries(ts, method='savitsky', window_length=3, polyorder=1):
         smooth_ts = savgol_filter(x=ts, window_length=window_length, polyorder=polyorder)
     return smooth_ts
 
-def get_timeseries_datacube(cube, geom):
-    band_ts = cube.sel(x=geom[0]['coordinates'][0], y=geom[0]['coordinates'][1], method='nearest')['band_data'].values
-    timeline = cube.coords['time'].values
+def get_timeseries_datacube(datacube, geom, band):
+    band_ts = datacube.sel(lat=geom[0]['coordinates'][0], lon=geom[0]['coordinates'][1], method='nearest')[band].values
+    timeline = datacube.coords['time'].values
     ts = []
     for value in band_ts:
-        ts.append(value[0])
-    return dict(values=ts, timeline= timeline)
+        ts.append(value)
+    return dict(values=ts, timeline=timeline)
 
 def unzip():
     for z in glob.glob("*.zip"):
@@ -398,7 +401,8 @@ def collection_get_list(datacube):
         item_search = stac.search(
             collections=[collection],
             datetime=start_date+"T00:00:00Z/"+end_date+"T23:59:00Z",
-            bbox=bbox
+            bbox=bbox,
+            limit=365
         )
         
     band_dict = {}
@@ -497,44 +501,69 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
     bbox = tuple(map(float, collection['bbox'].split(',')))
     
     sample_image_path = bands_dict[bands[0]][0]
-      
-    with rasterio.open(sample_image_path) as src:
-        data_proj = src.crs
     
+    if (collection['collection'] == "samet_daily-1"):
+        data_proj = pyproj.CRS.from_epsg(4326)
+    else:
+        with rasterio.open(sample_image_path) as src:
+            data_proj = src.crs
+        
     proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326), data_proj, always_xy=True).transform
 
     bbox_polygon = box(*bbox)
     reproj_bbox = transform(proj_converter, bbox_polygon)
     
     list_da = []
-    for i in range(len(bands)):
-        for image in bands_dict[bands[i]]:
-            da = xr.open_dataarray(image, engine='rasterio')
-            da = da.astype('int16')
-            try:
-                da = da.rio.clip_box(*reproj_bbox.bounds)  
-                image = image.split('/')[-1]
-                if (collection['collection'] == "AMZ1-WFI-L4-SR-1" or "S2-16D-2" or "samet_daily-1" or "LANDSAT-16D-1" or "landsat-2"):
-                    time = image.split("_")[3]
-                    dt = datetime.strptime(time, '%Y%m%d') 
-                if (collection['collection'] == "S2_L2A-1"):
-                    time = image.split("_")[2].split('T')[0]
-                    dt = datetime.strptime(time, '%Y%m%d')
-                else:
-                    time = image.split("_")[-2]
-                    dt = datetime.strptime(time, '%Y%m%d') 
-                dt = pd.to_datetime(dt)
-                da = da.assign_coords(time = dt)
-                da = da.expand_dims(dim="time")
-                list_da.append(da)
-            except:
-                pass
-        if (i==0):
-            data_cube = xr.combine_by_coords(list_da)
-            data_cube = data_cube.rename({'band_data': name_band(collection['collection'], bands[i])})
-        else:
-            band_data_array = xr.combine_by_coords(list_da)
-            band_data_array = band_data_array.rename({'band_data': name_band(collection['collection'], bands[i])})
-            data_cube = xr.merge([data_cube, band_data_array])
+
+    if (collection['collection'] == "samet_daily-1"):
+        data_cube = xr.Dataset()
+        for i in range(len(bands)):
+            for image in bands_dict[bands[i]]:
+                f = fs.open(image)
+                ds = xr.open_dataset(f)
+                min_lon, min_lat, max_lon, max_lat = map(float, collection['bbox'].split(','))
+                bbox = {
+                    'min_lon': min_lon,
+                    'max_lon': max_lon,
+                    'min_lat': min_lat,
+                    'max_lat': max_lat
+                }
+                clipped_ds = ds.sel(
+                    lon=slice(bbox['min_lon'], bbox['max_lon']),
+                    lat=slice(bbox['min_lat'], bbox['max_lat'])
+                )
+                ds_dropped = clipped_ds.drop_vars("nobs")
+                data_cube = xr.merge([data_cube, ds_dropped])
+
+    else:
+        for i in range(len(bands)):
+            for image in bands_dict[bands[i]]:
+                da = xr.open_dataarray(image, engine='rasterio')
+                da = da.astype('int16')
+                try:
+                    da = da.rio.clip_box(*reproj_bbox.bounds)  
+                    image = image.split('/')[-1]
+                    if (collection['collection'] == "AMZ1-WFI-L4-SR-1" or "S2-16D-2" or "LANDSAT-16D-1" or "landsat-2"):
+                        time = image.split("_")[3]
+                        dt = datetime.strptime(time, '%Y%m%d') 
+                    if (collection['collection'] == "S2_L2A-1"):
+                        time = image.split("_")[2].split('T')[0]
+                        dt = datetime.strptime(time, '%Y%m%d')
+                    else:
+                        time = image.split("_")[-2]
+                        dt = datetime.strptime(time, '%Y%m%d') 
+                    dt = pd.to_datetime(dt)
+                    da = da.assign_coords(time = dt)
+                    da = da.expand_dims(dim="time")
+                    list_da.append(da)
+                except:
+                    pass
+            if (i==0):
+                data_cube = xr.combine_by_coords(list_da)
+                data_cube = data_cube.rename({'band_data': name_band(collection['collection'], bands[i])})
+            else:
+                band_data_array = xr.combine_by_coords(list_da)
+                band_data_array = band_data_array.rename({'band_data': name_band(collection['collection'], bands[i])})
+                data_cube = xr.merge([data_cube, band_data_array])
 
     return data_cube
