@@ -19,8 +19,44 @@
 Changes
 =======
 
+0.5.0 (2025-09-25)
+------------------
 
-Version 0.0.1 (2024-06-28)
---------------------------
+* **Multi-band Support**: It is now possible to create an ``xarray`` data cube with more than one band.
+* **COG Support**: Added support for reading Cloud Optimized GeoTIFFs (COGs) with RasterIO, allowing data cube creation without downloading the images. 🛰️
+* **New Function**: Added ``simple_cube_download``, which preserves the previous version's behavior of downloading scenes locally.
+* **Optimization**: Band data is now automatically cast to ``Int16`` to reduce memory usage.
 
-- 
+
+0.4.0 (2025-07-16)
+------------------
+
+* **Landsat Collection 2**: Added full support for Landsat Collection 2 data.
+* **New Notebooks**: Added several example notebooks:
+    * ``phenometrics_simplecube_s2.ipynb``: A complete example of creating a Sentinel-2 data cube and calculating phenometrics.
+    * ``simplecube_hls.ipynb``: An example for creating an HLS data cube.
+    * ``simplecube_lc2.ipynb``: An example for creating a Landsat Collection 2 data cube.
+    * ``simplecube_s2.ipynb``: An example for creating a Sentinel-2 data cube.
+
+
+0.3.0 (2025-06-09)
+------------------
+
+* **New Function**: Added the new ``local_simple_cube`` function for improved local cube generation.
+* **Data Fetching**: Released a new version of ``collection_get_data``.
+* **Clipping**: Implemented the ``clip_box`` feature to crop data based on a bounding box in ``simple_cube``.
+
+
+0.2.0 (2025-06-05)
+------------------
+
+* Added the ``cube_get_data`` function.
+* Added filtering capabilities to ``simple_cube``.
+
+
+0.1.0 (2025-05-14)
+------------------
+
+* **Initial Release**: First implementation of ``simple_cube`` and ``local_simple_cube`` functions.
+* Completed the simplecube introduction notebook.
+* Completed the HLS time series example notebook.
