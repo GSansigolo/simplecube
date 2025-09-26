@@ -18,6 +18,7 @@ import rioxarray
 import calendar
 import pyproj
 from json import load
+import tempfile
 from pyproj import Transformer
 from pystac_client import Client
 from shapely.ops import transform
@@ -64,7 +65,7 @@ cloud_dict = {
     }
 }
 
-bands_dict = {
+bands_dict_names = {
   "S2": {
     "B01": { "name": "coastal" },
     "B02": { "name": "blue" },
@@ -197,7 +198,13 @@ def smooth_timeseries(ts, method='savitsky', window_length=3, polyorder=1):
     return smooth_ts
 
 def get_timeseries_datacube(datacube, geom, band):
-    band_ts = datacube.sel(lat=geom[0]['coordinates'][0], lon=geom[0]['coordinates'][1], method='nearest')[band].values
+    
+    if "latitude" in datacube.coords:
+        band_ts = datacube.sel(latitude=geom[0]['coordinates'][0], longitude=geom[0]['coordinates'][1], method='nearest')[band].values
+    elif "lat" in datacube.coords:
+        band_ts = datacube.sel(lat=geom[0]['coordinates'][0], lon=geom[0]['coordinates'][1], method='nearest')[band].values
+    else:
+        band_ts = datacube.sel(x=geom[0]['coordinates'][0], y=geom[0]['coordinates'][1], method='nearest')[band].values
     timeline = datacube.coords['time'].values
     ts = []
     for value in band_ts:
@@ -309,7 +316,7 @@ def local_simple_cube(collection, data_dir, source, bands, tile, bbox):
 def name_band(collection, band_id):
     standardized_name = collection.lower().replace('_', '-')
     code = standardized_name.upper().split('-')[0]
-    return bands_dict[code][band_id]['name']
+    return bands_dict_names[code][band_id]['name']
 
 def simple_cube_download(data_dir, collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     
@@ -493,7 +500,7 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
         bands=bands
     )
     
-    if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1', 'samet_daily-1']:
+    if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1', 'samet_daily-1', 'prec_merge_daily-1']:
         return print(f"{collection['collection']} collection not yet supported.")
     
     bands_dict = collection_get_list(collection)
@@ -502,7 +509,7 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
     
     sample_image_path = bands_dict[bands[0]][0]
     
-    if (collection['collection'] == "samet_daily-1"):
+    if (collection['collection'] == "samet_daily-1", "prec_merge_daily-1"):
         data_proj = pyproj.CRS.from_epsg(4326)
     else:
         with rasterio.open(sample_image_path) as src:
@@ -515,12 +522,43 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
     
     list_da = []
 
-    if (collection['collection'] == "samet_daily-1"):
+    if (collection['collection'] == "prec_merge_daily-1"): 
+        data_cube = xr.Dataset()
+        for i in range(len(bands)):
+            for image in bands_dict[bands[i]]:
+                try:
+                    with tempfile.NamedTemporaryFile() as tmp:
+                        fs.get(image, tmp.name)
+                        ds = xr.open_dataset(tmp.name, engine='cfgrib')
+                        ds_dropped = ds.drop_vars("prmsl")
+                        del ds_dropped.attrs['GRIB_edition']
+                        del ds_dropped.attrs['GRIB_centre']
+                        del ds_dropped.attrs['GRIB_centreDescription']
+                        del ds_dropped.attrs['GRIB_subCentre']
+                        del ds_dropped.attrs['Conventions']
+                        del ds_dropped.attrs['institution']
+                        del ds_dropped.attrs['history']
+                        ds_dropped = ds_dropped.drop_vars(['valid_time'])
+                        ds_dropped = ds_dropped.drop_vars(['surface'])
+                        ds_dropped = ds_dropped.drop_vars(['time'])
+                        ds_dropped = ds_dropped.drop_vars(['step'])
+                        time = image.split("/")[-1].split('.')[0].split("_")[2]
+                        dt = datetime.strptime(time, '%Y%m%d') 
+                        dt = pd.to_datetime(dt)
+                        da = ds_dropped.assign_coords(time = dt)
+                        da = da.expand_dims(dim="time")
+                        list_da.append(da)
+                except:
+                    pass
+            data_cube = xr.combine_by_coords(list_da)
+
+    elif (collection['collection'] == "samet_daily-1"): 
         data_cube = xr.Dataset()
         for i in range(len(bands)):
             for image in bands_dict[bands[i]]:
                 f = fs.open(image)
                 ds = xr.open_dataset(f)
+                
                 min_lon, min_lat, max_lon, max_lat = map(float, collection['bbox'].split(','))
                 bbox = {
                     'min_lon': min_lon,
@@ -528,13 +566,14 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
                     'min_lat': min_lat,
                     'max_lat': max_lat
                 }
+
                 clipped_ds = ds.sel(
                     lon=slice(bbox['min_lon'], bbox['max_lon']),
                     lat=slice(bbox['min_lat'], bbox['max_lat'])
                 )
+
                 ds_dropped = clipped_ds.drop_vars("nobs")
                 data_cube = xr.merge([data_cube, ds_dropped])
-
     else:
         for i in range(len(bands)):
             for image in bands_dict[bands[i]]:
