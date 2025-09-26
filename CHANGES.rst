@@ -24,9 +24,13 @@ Changes
 ------------------
 
 * **NetCDF Support**: The ``simplecube`` function can now create data cubes directly from NetCDF files.
+* **grib2 Support**: The ``simplecube`` function can now create data cubes directly from grib2 files.
 * **SAMeT Daily**: Added full support for SAMeT Daily data. 🛰️
 * **Function Update**: Updated the ``get_timeseries_datacube`` function to align with new NetCDF and remote file capabilities.
-* **New Notebook**: Added the ``simplecube_samet`` notebook to demonstrate the new functionalities. 
+* **MERGE Daily**: Added full support for MERGE Daily Precipitation data. 🛰️
+* **New Notebooks**: Added several example notebooks:
+    * ``simplecube_samet.ipynb``: An example for creating an SAMeT Daily data cube.
+    * ``simplecube_merge.ipynb``: An example for creating a prec Merge daily data cube.
 
 0.5.0 (2025-09-25)
 ------------------
