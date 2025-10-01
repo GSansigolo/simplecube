@@ -20,15 +20,19 @@
 Simple python package for creating satellite image data cubes based on Brazil Data Cube
 =======================================================================================
 
-
-.. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
-        :target: https://github.com/GSansigolo/simplecube/blob/master/LICENSE
-        :alt: Software License
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.17186644.svg
+        :target: https://doi.org/10.5281/zenodo.17186644
+        :alt: doi
 
 
 .. image:: https://readthedocs.org/projects/simplecube/badge/?version=latest
         :target: https://simplecube.readthedocs.io/en/latest/
         :alt: Documentation Status
+
+
+.. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
+        :target: https://github.com/GSansigolo/simplecube/blob/master/LICENSE
+        :alt: Software License
 
 
 .. image:: https://img.shields.io/badge/lifecycle-stable-green.svg
