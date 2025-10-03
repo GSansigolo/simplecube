@@ -114,8 +114,6 @@ coverage_proj = pyproj.CRS.from_wkt('''
         AXIS["Easting",EAST],
         AXIS["Northing",NORTH]]''')
 
-stac = Client.open("https://data.inpe.br/bdc/stac/v1")
-
 def collection_query(collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     """An object that contains the information associated with a collection 
     that can be downloaded or acessed.
@@ -318,8 +316,10 @@ def name_band(collection, band_id):
     code = standardized_name.upper().split('-')[0]
     return bands_dict_names[code][band_id]['name']
 
-def simple_cube_download(data_dir, collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
+def simple_cube_download(stac_url, data_dir, collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     
+    stac = Client.open(stac_url)
+
     collection=dict(
         collection=collection, 
         start_date=start_date,
@@ -331,7 +331,7 @@ def simple_cube_download(data_dir, collection, start_date, end_date, tile=None, 
     if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1']:
         return print(f"{collection['collection']} collection not yet supported.")
     
-    collection_get_data(collection, data_dir)
+    collection_get_data(stac, collection, data_dir)
                 
     bbox = tuple(map(float, collection['bbox'].split(',')))
     
@@ -396,7 +396,7 @@ def interpolate_array(array):
     return_array = np.where(np.isfinite(array),array,f(inds))
     return return_array.tolist()
 
-def collection_get_list(datacube):
+def collection_get_list(stac, datacube):
 
     collection = datacube['collection']
     bbox = datacube['bbox']
@@ -424,7 +424,7 @@ def collection_get_list(datacube):
 
     return band_dict
   
-def collection_get_data(datacube, data_dir):
+def collection_get_data(stac, datacube, data_dir):
     
     collection = datacube['collection']
     bbox = datacube['bbox']
@@ -490,8 +490,10 @@ def collection_get_data(datacube, data_dir):
 
     print(f"Successfully download {item_search.matched()} scenes to {os.path.join(collection)}")
 
-def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
+def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     
+    stac = Client.open(stac_url)
+
     collection=dict(
         collection=collection, 
         start_date=start_date,
@@ -503,7 +505,7 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
     if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1', 'samet_daily-1', 'prec_merge_daily-1']:
         return print(f"{collection['collection']} collection not yet supported.")
     
-    bands_dict = collection_get_list(collection)
+    bands_dict = collection_get_list(stac, collection)
                 
     bbox = tuple(map(float, collection['bbox'].split(',')))
     
