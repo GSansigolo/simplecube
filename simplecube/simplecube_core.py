@@ -509,7 +509,7 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
     
     sample_image_path = bands_dict[bands[0]][0]
     
-    if (collection['collection'] == "samet_daily-1", "prec_merge_daily-1"):
+    if (collection['collection'] == "samet_daily-1" or collection['collection'] == "prec_merge_daily-1"):
         data_proj = pyproj.CRS.from_epsg(4326)
     else:
         with rasterio.open(sample_image_path) as src:
@@ -574,6 +574,7 @@ def simple_cube(collection, start_date, end_date, tile=None, bbox=None, freq=Non
 
                 ds_dropped = clipped_ds.drop_vars("nobs")
                 data_cube = xr.merge([data_cube, ds_dropped])
+    
     else:
         for i in range(len(bands)):
             for image in bands_dict[bands[i]]:
