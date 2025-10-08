@@ -83,6 +83,7 @@ bands_dict_names = {
     "NDVI": { "name": "ndvi" },
     "EVI": { "name": "evi" },
     "NBR": { "name": "nbr" },
+    "SCL": { "name": "scl" },
   },
  "SAMET":{
      "tmax": { "name": "tmax" },
