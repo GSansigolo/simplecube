@@ -20,7 +20,7 @@ Changes
 =======
 
 
-0.6.0 (2025-XX-YY)
+0.6.0 (2025-10-14)
 ------------------
 
 * **NetCDF Support**: The ``simplecube`` function can now create data cubes directly from NetCDF files.
@@ -29,8 +29,11 @@ Changes
 * **Function Update**: Updated the ``get_timeseries_datacube`` function to align with new NetCDF and remote file capabilities.
 * **MERGE Daily**: Added full support for MERGE Daily Precipitation data. 🛰️
 * **New Notebooks**: Added several example notebooks:
-    * ``simplecube_samet.ipynb``: An example for creating an SAMeT Daily data cube.
-    * ``simplecube_merge.ipynb``: An example for creating a prec Merge daily data cube.
+    * ``simplecube_s2_rgb.ipynb`: An example for creating a RGB Sentinel-2 data cube.
+    * ``simplecube_s2_interpolate.ipynb``: An example for creating a Sentinel-2 cloud interpolate data cube.
+    * ``simplecube_s2_smoothed.ipynb``: An example for creating a Sentinel-2  data cube.
+    * ``simplecube_s2_spectral_indices.ipynb``: An example for creating a Sentinel-2  data cube anf then calculating NDVI, EVI2, NDWI and SAVI spectral indices.
+
 
 0.5.0 (2025-09-25)
 ------------------
