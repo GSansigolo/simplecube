@@ -32,7 +32,7 @@ Changes
     * ``simplecube_s2_rgb.ipynb``: An example for creating a RGB Sentinel-2 data cube.
     * ``simplecube_s2_interpolate.ipynb``: An example for creating a Sentinel-2 cloud interpolate data cube.
     * ``simplecube_s2_smoothed.ipynb``: An example for creating a Sentinel-2  data cube.
-    * ``simplecube_s2_spectral_indices.ipynb``: An example for creating a Sentinel-2  data cube anf then calculating NDVI, EVI2, NDWI and SAVI spectral indices.
+    * ``simplecube_s2_spectral_indices.ipynb``: An example for creating a Sentinel-2  data cube and calculating NDVI, EVI2, NDWI and SAVI spectral indices.
 
 
 0.5.0 (2025-09-25)
