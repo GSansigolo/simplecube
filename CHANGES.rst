@@ -29,7 +29,7 @@ Changes
 * **Function Update**: Updated the ``get_timeseries_datacube`` function to align with new NetCDF and remote file capabilities.
 * **MERGE Daily**: Added full support for MERGE Daily Precipitation data. 🛰️
 * **New Notebooks**: Added several example notebooks:
-    * ``simplecube_s2_rgb.ipynb`: An example for creating a RGB Sentinel-2 data cube.
+    * ``simplecube_s2_rgb.ipynb``: An example for creating a RGB Sentinel-2 data cube.
     * ``simplecube_s2_interpolate.ipynb``: An example for creating a Sentinel-2 cloud interpolate data cube.
     * ``simplecube_s2_smoothed.ipynb``: An example for creating a Sentinel-2  data cube.
     * ``simplecube_s2_spectral_indices.ipynb``: An example for creating a Sentinel-2  data cube anf then calculating NDVI, EVI2, NDWI and SAVI spectral indices.
