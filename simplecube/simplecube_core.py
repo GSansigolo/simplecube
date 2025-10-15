@@ -62,6 +62,12 @@ cloud_dict = {
         'non_cloud_values': [127],
         'cloud_values': [255, 0],
         'no_data_value': 0
+    },
+    'CBERS-WFI-8D-1':{
+        'cloud_band': 'CMASK',
+        'non_cloud_values': [127],
+        'cloud_values': [255, 0],
+        'no_data_value': 0
     }
 }
 
@@ -90,6 +96,17 @@ bands_dict_names = {
      "tmin": { "name": "tmin" },
      "tmean": { "name": "tmean" },
      "thumbnail": { "name": "thumbnail" }
+ },
+ "CBERS":{
+    "BAND13": { "name": "blue" },
+    "BAND14": { "name": "green" },
+    "BAND15": { "name": "red" },
+    "BAND16": { "name": "nir" },
+    "CLEAROB": { "name": "clear-observation" },
+    "TOTALOB": { "name": "total-observation" },
+    "EVI": { "name": "evi" },
+    "NDVI": { "name": "ndvi" },
+    "CMASK": { "name": "cmask" }
  }
 }
 
@@ -140,6 +157,7 @@ def collection_query(collection, start_date, end_date, tile=None, bbox=None, fre
         end_date = end_date
     )
 
+
 def download_stream(file_path: str, response, chunk_size=1024*64, progress=True, offset=0, total_size=None):
     """Download request stream data to disk.
 
@@ -182,6 +200,7 @@ def download_stream(file_path: str, response, chunk_size=1024*64, progress=True,
     #    os.remove(file_path)
     #    raise IOError(f'Download file is corrupt. Expected {total_size} bytes, got {file_size}')
 
+
 def create_filter_array(array, filter_true, filter_false):
     filter_arr = []
     for element in array:
@@ -191,10 +210,12 @@ def create_filter_array(array, filter_true, filter_false):
             filter_arr.append(1)
     return filter_arr
 
+
 def smooth_timeseries(ts, method='savitsky', window_length=3, polyorder=1):
     if (method=='savitsky'):
         smooth_ts = savgol_filter(x=ts, window_length=window_length, polyorder=polyorder)
     return smooth_ts
+
 
 def get_timeseries_datacube(datacube, geom, band):
     
@@ -210,6 +231,7 @@ def get_timeseries_datacube(datacube, geom, band):
         ts.append(value)
     return dict(values=ts, timeline=timeline)
 
+
 def unzip():
     for z in glob.glob("*.zip"):
         try:
@@ -220,7 +242,8 @@ def unzip():
         except:
             #print("An exception occurred")
             os.remove(z)
-            
+
+
 def geometry_collides_with_bbox(geometry,input_bbox):
     """
     Check if a Shapely geometry collides with a bounding box.
@@ -237,7 +260,8 @@ def geometry_collides_with_bbox(geometry,input_bbox):
     
     # Check for intersection
     return geometry.intersects(bbox_polygon)
-     
+
+
 def filter_scenes(collection, data_dir, bbox):
     """
     Return scenes from data_dir where the geometry collides with the bounding box.
@@ -268,6 +292,7 @@ def filter_scenes(collection, data_dir, bbox):
             pass
         
     return filtered_list
+
 
 def local_simple_cube(collection, data_dir, source, bands, tile, bbox):
     
@@ -311,11 +336,13 @@ def local_simple_cube(collection, data_dir, source, bands, tile, bbox):
             pass
     data_cube = xr.combine_by_coords(list_da)   
     return data_cube
-       
+
+
 def name_band(collection, band_id):
     standardized_name = collection.lower().replace('_', '-')
     code = standardized_name.upper().split('-')[0]
     return bands_dict_names[code][band_id]['name']
+
 
 def simple_cube_download(stac_url, data_dir, collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     
@@ -329,7 +356,7 @@ def simple_cube_download(stac_url, data_dir, collection, start_date, end_date, t
         bands=bands
     )
     
-    if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1']:
+    if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1', 'CBERS-WFI-8D-1']:
         return print(f"{collection['collection']} collection not yet supported.")
     
     collection_get_data(stac, collection, data_dir)
@@ -356,6 +383,9 @@ def simple_cube_download(stac_url, data_dir, collection, start_date, end_date, t
             da = da.astype('int16')
             try:
                 da = da.rio.clip_box(*reproj_bbox.bounds)  
+                if (collection['collection'] == "AMZ1-WFI-L4-SR-1"):
+                    time = image.split("_")[3]
+                    dt = datetime.strptime(time, '%Y%m%d') 
                 if (collection['collection'] == "AMZ1-WFI-L4-SR-1"):
                     time = image.split("_")[3]
                     dt = datetime.strptime(time, '%Y%m%d') 
@@ -386,7 +416,8 @@ def simple_cube_download(stac_url, data_dir, collection, start_date, end_date, t
             data_cube = xr.merge([data_cube, band_data_array])
 
     return data_cube
-       
+
+
 def interpolate_array(array):
     if len(array) == 0:
         return []
@@ -396,6 +427,7 @@ def interpolate_array(array):
     f = scipy_interpolate.interp1d(inds[good],array[good],bounds_error=False)
     return_array = np.where(np.isfinite(array),array,f(inds))
     return return_array.tolist()
+
 
 def collection_get_list(stac, datacube):
 
@@ -425,6 +457,7 @@ def collection_get_list(stac, datacube):
 
     return band_dict
   
+
 def collection_get_data(stac, datacube, data_dir):
     
     collection = datacube['collection']
@@ -491,28 +524,31 @@ def collection_get_data(stac, datacube, data_dir):
 
     print(f"Successfully download {item_search.matched()} scenes to {os.path.join(collection)}")
 
+
 def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     
     stac = Client.open(stac_url)
 
-    collection=dict(
-        collection=collection, 
+    collection_name = collection
+
+    collection_dict=dict(
+        collection=collection_name, 
         start_date=start_date,
         end_date=end_date,    
         bbox=bbox,
         bands=bands
     )
+
+    if collection_name not in ['CBERS-WFI-8D-1', 'landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1', 'samet_daily-1', 'prec_merge_daily-1']:
+        return print(f"{collection_name} collection not yet supported.")
     
-    if collection['collection'] not in ['landsat-2', 'LANDSAT-16D-1', 'S2-16D-2', 'S2_L2A-1', 'samet_daily-1', 'prec_merge_daily-1']:
-        return print(f"{collection['collection']} collection not yet supported.")
-    
-    bands_dict = collection_get_list(stac, collection)
+    bands_dict = collection_get_list(stac, collection_dict)
                 
-    bbox = tuple(map(float, collection['bbox'].split(',')))
+    bbox = tuple(map(float, collection_dict['bbox'].split(',')))
     
     sample_image_path = bands_dict[bands[0]][0]
     
-    if (collection['collection'] == "samet_daily-1" or collection['collection'] == "prec_merge_daily-1"):
+    if (collection_name == "samet_daily-1" or collection_name == "prec_merge_daily-1"):
         data_proj = pyproj.CRS.from_epsg(4326)
     else:
         with rasterio.open(sample_image_path) as src:
@@ -525,7 +561,7 @@ def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None
     
     list_da = []
 
-    if (collection['collection'] == "prec_merge_daily-1"): 
+    if (collection_name == "prec_merge_daily-1"): 
         data_cube = xr.Dataset()
         for i in range(len(bands)):
             for image in bands_dict[bands[i]]:
@@ -555,7 +591,7 @@ def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None
                     pass
             data_cube = xr.combine_by_coords(list_da)
 
-    elif (collection['collection'] == "samet_daily-1"): 
+    elif (collection_name == "samet_daily-1"): 
         data_cube = xr.Dataset()
         for i in range(len(bands)):
             for image in bands_dict[bands[i]]:
@@ -584,14 +620,17 @@ def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None
                 da = xr.open_dataarray(image, engine='rasterio')
                 da = da.astype('int16')
                 try:
-                    da = da.rio.clip_box(*reproj_bbox.bounds)  
+                    da = da.rio.clip_box(*reproj_bbox.bounds)
                     image = image.split('/')[-1]
-                    if (collection['collection'] == "AMZ1-WFI-L4-SR-1" or "S2-16D-2" or "LANDSAT-16D-1" or "landsat-2"):
+                    if (collection_name == "AMZ1-WFI-L4-SR-1" or collection_name == "S2-16D-2" or collection_name == "LANDSAT-16D-1" or collection_name == "landsat-2"):
                         time = image.split("_")[3]
                         dt = datetime.strptime(time, '%Y%m%d') 
-                    if (collection['collection'] == "S2_L2A-1"):
+                    elif (collection_name == "S2_L2A-1"):
                         time = image.split("_")[2].split('T')[0]
                         dt = datetime.strptime(time, '%Y%m%d')
+                    elif (collection_name == "CBERS-WFI-8D-1"):
+                        time = image.split("_")[6]
+                        dt = datetime.strptime(time, '%Y-%m-%d') 
                     else:
                         time = image.split("_")[-2]
                         dt = datetime.strptime(time, '%Y%m%d') 
@@ -603,10 +642,10 @@ def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None
                     pass
             if (i==0):
                 data_cube = xr.combine_by_coords(list_da)
-                data_cube = data_cube.rename({'band_data': name_band(collection['collection'], bands[i])})
+                data_cube = data_cube.rename({'band_data': name_band(collection_name, bands[i])})
             else:
                 band_data_array = xr.combine_by_coords(list_da)
-                band_data_array = band_data_array.rename({'band_data': name_band(collection['collection'], bands[i])})
+                band_data_array = band_data_array.rename({'band_data': name_band(collection_name, bands[i])})
                 data_cube = xr.merge([data_cube, band_data_array])
 
     return data_cube

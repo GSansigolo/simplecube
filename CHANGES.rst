@@ -19,6 +19,10 @@
 Changes
 =======
 
+0.7.0 (2025-11-XX)
+------------------
+
+* **CBERS/WFI**: Added full support for CBERS/WFI 8D data cube. 🛰️
 
 0.6.0 (2025-10-14)
 ------------------
