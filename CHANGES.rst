@@ -19,6 +19,14 @@
 Changes
 =======
 
+0.7.0 (2025-11-19)
+------------------
+
+* **CBERS/WFI**: Added full support for CBERS/WFI 8D data cube. 🛰️
+* **New Notebooks**: Added several example notebooks:
+    * ``simplecube_cbers_rgb.ipynb``: An example for creating a RGB CBERS/WFI 8D data cube.
+* **Fix**: Resolved an ``simplecube`` import error, added `pystac-client` module.
+
 
 0.6.0 (2025-10-14)
 ------------------
