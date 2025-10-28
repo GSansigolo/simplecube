@@ -19,7 +19,13 @@
 Changes
 =======
 
-0.7.0 (2025-11-19)
+0.8.0 (2025-10-28)
+------------------
+
+* **Fix**: Resolved an import error with `numpy`, `rioxarray`, `shapely` and `pystac_client` modules.
+
+
+0.7.0 (2025-10-19)
 ------------------
 
 * **CBERS/WFI**: Added full support for CBERS/WFI 8D data cube. 🛰️
