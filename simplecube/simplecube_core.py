@@ -132,6 +132,26 @@ coverage_proj = pyproj.CRS.from_wkt('''
         AXIS["Easting",EAST],
         AXIS["Northing",NORTH]]''')
 
+
+def save_xarray(ds, filename):
+    if isinstance(ds, xr.DataArray):
+        ds = ds.to_dataset(name='dataarray')
+        ds.attrs['_xarray_type'] = 'DataArray'
+    ds.to_netcdf(filename)
+    print(f"xarray object saved to {filename}")
+
+
+def load_xarray(filename, decode_times=False):
+    ds = xr.open_dataset(filename, decode_times=decode_times)
+    if '_xarray_type' in ds.attrs and ds.attrs['_xarray_type'] == 'DataArray':
+        da = ds['dataarray']
+        da.attrs = {k: v for k, v in ds.attrs.items() if k != '_xarray_type'}
+        ds.close()
+        return da
+    else:
+        return ds
+    
+    
 def collection_query(collection, start_date, end_date, tile=None, bbox=None, freq=None, bands=None):
     """An object that contains the information associated with a collection 
     that can be downloaded or acessed.

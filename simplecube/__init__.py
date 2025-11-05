@@ -1,1 +1,1 @@
-from .simplecube_core import  collection_query, simple_cube_download, simple_cube, collection_get_data, get_timeseries_datacube, local_simple_cube
+from .simplecube_core import  collection_query, simple_cube_download, simple_cube, collection_get_data, get_timeseries_datacube, local_simple_cube, save_xarray, load_xarray
