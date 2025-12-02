@@ -315,26 +315,24 @@ def filter_scenes(collection, data_dir, bbox):
 
 
 def local_simple_cube(collection, data_dir, source, bands, tile, bbox):
+    for i in range(len(bands)):
+        search_bbox = tuple(map(float, bbox.split(',')))
+        
+        sample_image_path = os.path.join(data_dir, collection, tile, bands[i])
     
-    band = bands[0]
-    
-    bbox = tuple(map(float, bbox.split(',')))
-    
-    sample_image_path = os.path.join(data_dir, collection, tile, band)
-   
-    list_dir = [item for item in os.listdir(sample_image_path)]       
-    with rasterio.open(os.path.join(sample_image_path, list_dir[0])) as src:
-        data_proj = src.crs
-    
-    proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326), data_proj, always_xy=True).transform
+        list_dir = [item for item in os.listdir(sample_image_path)]    
 
-    bbox_polygon = box(*bbox)
-    reproj_bbox = transform(proj_converter, bbox_polygon)
-    
-    list_da = []
-    for image in os.listdir(os.path.join(data_dir, collection, tile, band)):
-        da = xr.open_dataarray(os.path.join(data_dir, collection, tile, band, image), engine='rasterio')
-        try:
+        with rasterio.open(os.path.join(sample_image_path, list_dir[0])) as src:
+            data_proj = src.crs
+        
+        proj_converter = Transformer.from_crs(pyproj.CRS.from_epsg(4326), data_proj, always_xy=True).transform
+
+        bbox_polygon = box(*search_bbox)
+        reproj_bbox = transform(proj_converter, bbox_polygon)
+        
+        list_da = []
+        for image in os.listdir(os.path.join(data_dir, collection, tile, bands[i])):
+            da = xr.open_dataarray(os.path.join(data_dir, collection, tile, bands[i], image), engine='rasterio')
             da = da.rio.clip_box(*reproj_bbox.bounds)  
             if (source == 'bdc'):
                 time = image.split("_")[-2]
@@ -351,10 +349,17 @@ def local_simple_cube(collection, data_dir, source, bands, tile, bbox):
             dt = pd.to_datetime(dt)
             da = da.assign_coords(time = dt)
             da = da.expand_dims(dim="time")
+            da.attrs = {}
             list_da.append(da)
-        except:
-            pass
-    data_cube = xr.combine_by_coords(list_da)   
+
+        band_cube = xr.combine_by_coords(list_da)   
+        band_cube = band_cube.rename({'band_data': bands[i]})
+        
+        if i == 0:
+            data_cube = band_cube
+        else:
+            data_cube = xr.merge([data_cube, band_cube])
+    
     return data_cube
 
 
