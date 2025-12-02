@@ -22,7 +22,7 @@ Changes
 0.9.1 (2025-12-02)
 ------------------
 
-* **Multi-band Support in Local Simple Cube **: It is now possible to create an ``xarray`` data cube with local data with more than one band.
+* **Multi-band Support in Local Simple Cube**: It is now possible to create an ``xarray`` data cube with local data with more than one band.
 * **Local Simple Cube Refactor**: Redesigned the local simple cube function to properly handle HLS with multi-band.
 * **New Notebook**: Added ``simplecube_hls_rgb.ipynb`` example notebook demonstrating usage of `local_simple_cube` and HLS data.
 
