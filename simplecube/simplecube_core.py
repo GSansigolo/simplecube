@@ -25,6 +25,7 @@ from shapely.ops import transform
 import shapely
 from shapely.geometry import box
 from shapely.geometry import shape
+import matplotlib.pyplot as plt
 
 fs = fsspec.filesystem('https')
 
@@ -346,6 +347,9 @@ def local_simple_cube(collection, data_dir, source, bands, tile, bbox):
             if (source == 'nasa'):
                 time = image.split(".")[3]
                 dt = datetime.strptime(time, '%Y%jT%H%M%S')
+            if (source == 'microsoft'):
+                time = image.split("_")[4]
+                dt = datetime.strptime(time, '%Y%m%dT%H%M%S')
             dt = pd.to_datetime(dt)
             da = da.assign_coords(time = dt)
             da = da.expand_dims(dim="time")
@@ -674,3 +678,42 @@ def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None
                 data_cube = xr.merge([data_cube, band_data_array])
 
     return data_cube
+
+
+def s1_plot(S1_cube, time_str):
+    """
+    Takes an xarray Dataset of Sentinel-1 SAR data and a time string,
+    calculates a custom RGB composite, and plots the result.
+    """
+    # Select the specific time and remove dummy dimensions
+    ds_t = S1_cube.sel(time=time_str).squeeze()
+
+    # Extract polarization values
+    vv = ds_t['vv'].values
+    vh = ds_t['vh'].values
+
+    # Calculate RGB bands while ignoring divide-by-zero or log-of-negative warnings
+    with np.errstate(divide='ignore', invalid='ignore'):
+        red = 0.03 + np.log(1e-3 - np.log(0.05 / (0.02 + 2 * vv)))
+        green = 0.05 + np.exp(0.25 * (np.log(0.01 + 2 * vv) + np.log(0.02 + 5 * vh)))
+        blue = 1 - np.log(0.05 / (0.045 - 0.9 * vv))
+
+    # Normalize bands
+    red_norm = np.clip(red, 0, 0.8) / 0.8
+    green_norm = np.clip(green, 0, 1.0)
+    blue_norm = np.clip(blue, 0, 1.0)
+
+    # Stack into an RGB array and replace NaNs with 0
+    rgb = np.dstack((red_norm, green_norm, blue_norm))
+    rgb = np.nan_to_num(rgb, nan=0.0)
+
+    # Plot the result
+    fig, ax = plt.subplots(figsize=(7, 7))
+
+    ax.imshow(rgb, origin='upper')
+    ax.set_title(f'SAR RGB Composite - {time_str}')
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+
+    plt.tight_layout()
+    plt.show()
