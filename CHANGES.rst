@@ -19,6 +19,16 @@
 Changes
 =======
 
+0.9.2 (2026-05-14)
+------------------
+
+* **Sentinel-1 Support**: Added support for Sentinel-1 Radiometrically Terrain Corrected (RTC) data from the Microsoft Planetary Computer via ``local_simple_cube``. 🛰️
+* **SAR RGB Visualization**: Added the ``s1_plot`` function, which implements a custom false-color composite logic using VV and VH polarizations to enhance SAR features.
+* **SAR Time Series Extraction**: Added the ``s1_ts`` function to extract point-based time series from Sentinel-1 data cubes, including automatic CRS transformation (EPSG:4326 to EPSG:32721) and human-readable date formatting.
+* **Fix**: Optimized the time coordinate handling to ensure nanosecond timestamps are correctly formatted as ``YYYY-MM-DD`` strings in time series outputs.
+* **New Notebook**: Added ``simplecube_s1_rtc_microsoft.ipynb`` example notebook demonstrating usage of the Sentinel-1 data cube.
+
+
 0.9.1 (2025-12-02)
 ------------------
 
