@@ -679,6 +679,25 @@ def simple_cube(stac_url, collection, start_date, end_date, tile=None, bbox=None
 
     return data_cube
 
+def s1_ts(ds, lat, lon, band='vv'):
+    """
+    Extracts a time series dictionary for a specific band at a Lat/Lon point.
+    Returns: {'values': [...], 'timeline': [...]}
+    """
+    
+    transformer = Transformer.from_crs("EPSG:4326", "EPSG:32721", always_xy=True)
+    x_utm, y_utm = transformer.transform(lon, lat)
+    
+
+    point_ds = ds.sel(x=x_utm, y=y_utm, method="nearest").squeeze()
+    
+    band_ts = point_ds[band].values
+    timeline = pd.to_datetime(ds.coords['time'].values, unit='ns').strftime('%Y-%m-%d')
+    
+    return {
+        "values": band_ts.tolist(), 
+        "timeline": timeline.tolist()
+    }
 
 def s1_plot(S1_cube, time_str):
     """
